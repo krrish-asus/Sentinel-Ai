@@ -1,0 +1,20 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
+import Contact from "./pages/Contact";
+import Query from "./pages/Query";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/query" element={<Query />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
