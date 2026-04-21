@@ -2,12 +2,13 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    await mongoose.connect("mongodb://127.0.0.1:27017/sentinelAI");
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      family: 4, // 🔥 FORCE IPV4 (fixes ECONNREFUSED)
+    });
 
-    console.log("✅ MongoDB Connected - db.js:7");
+    console.log(`✅ MongoDB Connected: ${conn.connection.host} - db.js:9`);
   } catch (error) {
-    console.error("❌ DB Error: - db.js:9", error.message);
-    process.exit(1);
+    console.error("❌ MongoDB Connection Failed: - db.js:11", error.message);
   }
 };
 

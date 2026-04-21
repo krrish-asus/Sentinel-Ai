@@ -1,16 +1,14 @@
 import express from "express";
 import {
-  createLog,
   getLogs,
+  createLog,
   getStats,
 } from "../controllers/logController.js";
 
 const router = express.Router();
 
-router.post("/logs", createLog);
 router.get("/logs", getLogs);
-
-// 🔥 THIS IS WHAT YOU ARE MISSING
+router.post("/logs", createLog);
 router.get("/stats", getStats);
 
 export default router;

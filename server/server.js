@@ -1,12 +1,12 @@
 import express from "express";
 import cors from "cors";
-import connectDB from "./config/db.js";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js"; // ✅ correct path
 import logRoutes from "./src/routes/logRoutes.js";
 
-const app = express();
+dotenv.config();
 
-// ✅ CONNECT DATABASE FIRST
-connectDB();
+const app = express();
 
 // middleware
 app.use(cors());
@@ -15,7 +15,16 @@ app.use(express.json());
 // routes
 app.use("/api", logRoutes);
 
-// start server
-app.listen(5000, () => {
-  console.log("🚀 Server running on http://localhost:5000 - server.js:20");
+// health check (VERY IMPORTANT for Render)
+app.get("/", (req, res) => {
+  res.send("Sentinel AI Backend Running 🚀");
+});
+
+// connect DB and start server
+const PORT = process.env.PORT || 10000;
+
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT} - server.js:28`);
+  });
 });

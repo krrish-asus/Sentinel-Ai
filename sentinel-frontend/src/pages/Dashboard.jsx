@@ -17,21 +17,23 @@ export default function Dashboard() {
     medium: 0,
     low: 0,
   });
-
   const [chartData, setChartData] = useState([]);
 
-  // 🔥 FETCH DATA
+  const API = "http://localhost:5000/api";
+
+  // 🔄 FETCH DATA
   const fetchAll = async () => {
     try {
-      const logsRes = await axios.get("http://localhost:5000/api/logs");
-      const statsRes = await axios.get("http://localhost:5000/api/stats");
+      const logsRes = await axios.get(`${API}/logs`);
+      const statsRes = await axios.get(`${API}/stats`);
 
-      setLogs(logsRes.data);
+      const logsData = logsRes.data || [];
+
+      setLogs(logsData);
       setStats(statsRes.data);
 
-      // 📊 GRAPH DATA
-      const formatted = logsRes.data.map((log, index) => ({
-        name: `#${index + 1}`,
+      const formatted = logsData.map((log, i) => ({
+        name: `#${i + 1}`,
         value:
           log.level === "high"
             ? 3
@@ -42,34 +44,35 @@ export default function Dashboard() {
 
       setChartData(formatted);
     } catch (err) {
-      console.log(err);
+      console.log("Dashboard Error:", err.message);
     }
   };
 
   useEffect(() => {
     fetchAll();
-
-    // 🔄 AUTO REFRESH
     const interval = setInterval(fetchAll, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // 🔥 BUTTON ACTIONS
+  // 🔥 SEND ATTACK
   const sendLog = async (message) => {
-    await axios.post("http://localhost:5000/api/logs", { message });
-    fetchAll();
+    try {
+      await axios.post(`${API}/logs`, { message });
+      fetchAll();
+    } catch (err) {
+      console.log("Send Error:", err.message);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white p-6">
 
-      {/* 🔥 TITLE */}
-      <h1 className="text-3xl font-bold mb-6">
+      <h1 className="text-3xl text-cyan-400 mb-6">
         🚀 Sentinel AI Dashboard
       </h1>
 
-      {/* 🔥 ATTACK BUTTONS */}
-      <div className="flex gap-3 mb-6 flex-wrap">
+      {/* BUTTONS */}
+      <div className="flex gap-3 mb-6">
         <button
           onClick={() => sendLog("SELECT * FROM users")}
           className="bg-red-500 px-4 py-2 rounded"
@@ -85,7 +88,7 @@ export default function Dashboard() {
         </button>
 
         <button
-          onClick={() => sendLog("Brute force login attempt")}
+          onClick={() => sendLog("Brute force login")}
           className="bg-pink-500 px-4 py-2 rounded"
         >
           Brute Force
@@ -99,27 +102,27 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* 📊 STATS CARDS */}
+      {/* STATS */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <div className="bg-gray-800 p-4 rounded">
+        <div className="bg-gray-800 p-4 text-center">
           Total: {stats.total}
         </div>
 
-        <div className="bg-red-500 p-4 rounded">
+        <div className="bg-red-500 p-4 text-center">
           High: {stats.high}
         </div>
 
-        <div className="bg-yellow-500 p-4 rounded">
+        <div className="bg-yellow-500 text-black p-4 text-center">
           Medium: {stats.medium}
         </div>
 
-        <div className="bg-green-500 p-4 rounded">
+        <div className="bg-green-500 p-4 text-center">
           Safe: {stats.low}
         </div>
       </div>
 
-      {/* 📈 GRAPH BACK (FIXED) */}
-      <div className="bg-gray-900 p-6 rounded mb-8">
+      {/* GRAPH */}
+      <div className="bg-gray-900 p-6 mb-8">
         <h2 className="text-xl mb-4">📈 Threat Trend</h2>
 
         <LineChart width={800} height={300} data={chartData}>
@@ -131,20 +134,33 @@ export default function Dashboard() {
         </LineChart>
       </div>
 
-      {/* 📜 LOGS */}
-      <div className="bg-gray-900 p-6 rounded">
+      {/* LOGS */}
+      <div className="bg-gray-900 p-6">
         <h2 className="text-xl mb-4">📜 Logs</h2>
 
         {logs.length === 0 ? (
           <p>No logs found</p>
         ) : (
           logs.map((log, i) => (
-            <div
-              key={i}
-              className="border-b border-gray-700 py-2 flex justify-between"
-            >
-              <span>{log.message}</span>
-              <span className="uppercase">{log.level}</span>
+            <div key={i} className="border-b border-gray-700 py-2">
+
+              <div className={log.anomaly ? "text-red-400" : ""}>
+                {log.message}
+              </div>
+
+              <div className="text-sm text-gray-400">
+                🌍 {log.location?.country || "Unknown"}
+              </div>
+
+              <div className="text-xs text-gray-500">
+                IP: {log.ip}
+              </div>
+
+              {log.anomaly && (
+                <div className="text-red-500 text-sm">
+                  ⚠️ Anomaly
+                </div>
+              )}
             </div>
           ))
         )}

@@ -1,105 +1,72 @@
 import Log from "../models/Log.js";
-import { getIO } from "../sockets/socket.js";
+import axios from "axios";
 
-// 🔥 THREAT DETECTION (FIXED + STRONG)
+// 🔥 DETECT THREAT
 const detectThreat = (message = "") => {
   const msg = message.toLowerCase();
 
-  // HIGH threats
-  if (
-    msg.includes("select") ||
-    msg.includes("drop") ||
-    msg.includes("union") ||
-    msg.includes("<script") ||
-    msg.includes("alert(")
-  ) {
-    return "high";
-  }
+  if (msg.includes("select") || msg.includes("<script") || msg.includes("drop")) return "high";
+  if (msg.includes("login") || msg.includes("admin") || msg.includes("password")) return "medium";
 
-  // MEDIUM threats
-  if (
-    msg.includes("admin") ||
-    msg.includes("password") ||
-    msg.includes("login") ||
-    msg.includes("brute")
-  ) {
-    return "medium";
-  }
-
-  // SAFE
   return "low";
 };
 
-// ✅ CREATE LOG
+// 🌍 GET IP LOCATION
+const getLocation = async (ip) => {
+  try {
+    const res = await axios.get(`http://ip-api.com/json/${ip}`);
+    return {
+      country: res.data.country,
+      city: res.data.city,
+      lat: res.data.lat,
+      lon: res.data.lon,
+    };
+  } catch {
+    return {};
+  }
+};
+
+// 🔥 CREATE LOG
 export const createLog = async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ message: "Message is required" });
-    }
+    const ip =
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress ||
+      "8.8.8.8"; // fallback for local
 
-    // 🔥 IMPORTANT: DO NOT TRUST FRONTEND LEVEL
     const level = detectThreat(message);
+
+    const location = await getLocation(ip);
 
     const log = await Log.create({
       message,
-      level, // always controlled by backend
+      level,
+      ip,
+      location,
     });
-
-    // 🔥 SOCKET EMIT (SAFE)
-    try {
-      const io = getIO();
-      if (io) {
-        io.emit("new-log", log);
-      }
-    } catch (e) {
-      console.log("Socket not initialized yet - logController.js:57");
-    }
 
     res.status(201).json(log);
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
 
-// ✅ GET ALL LOGS
+// GET LOGS
 export const getLogs = async (req, res) => {
-  try {
-    const logs = await Log.find().sort({ createdAt: -1 });
-    res.json(logs);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  const logs = await Log.find().sort({ createdAt: -1 });
+  res.json(logs);
 };
 
-// ✅ GET STATS (FIXED CORE ISSUE)
+// STATS
 export const getStats = async (req, res) => {
-  try {
-    const logs = await Log.find();
+  const logs = await Log.find();
 
-    const total = logs.length;
+  const total = logs.length;
+  const high = logs.filter(l => l.level === "high").length;
+  const medium = logs.filter(l => l.level === "medium").length;
+  const low = logs.filter(l => l.level === "low").length;
 
-    const high = logs.filter(
-      (l) => l.level && l.level.toLowerCase() === "high"
-    ).length;
-
-    const medium = logs.filter(
-      (l) => l.level && l.level.toLowerCase() === "medium"
-    ).length;
-
-    const low = logs.filter(
-      (l) => l.level && l.level.toLowerCase() === "low"
-    ).length;
-
-    res.json({
-      total,
-      high,
-      medium,
-      low,
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  res.json({ total, high, medium, low });
 };
