@@ -1,171 +1,207 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   LineChart,
   Line,
   XAxis,
   YAxis,
   Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
   CartesianGrid,
 } from "recharts";
 
+const API = "https://sentinel-ai-93oe.onrender.com/api";
+
+const COLORS = ["#ff4d4d", "#ffaa00", "#00ffcc"];
+
 export default function Dashboard() {
   const [logs, setLogs] = useState([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    high: 0,
-    medium: 0,
-    low: 0,
-  });
-  const [chartData, setChartData] = useState([]);
+  const [filter, setFilter] = useState("ALL");
 
-  const API = "http://localhost:5000/api";
-
-  // 🔄 FETCH DATA
-  const fetchAll = async () => {
+  // 🔥 FETCH LOGS
+  const fetchLogs = async () => {
     try {
-      const logsRes = await axios.get(`${API}/logs`);
-      const statsRes = await axios.get(`${API}/stats`);
+      const res = await fetch(`${API}/logs`);
+      const data = await res.json();
 
-      const logsData = logsRes.data || [];
-
-      setLogs(logsData);
-      setStats(statsRes.data);
-
-      const formatted = logsData.map((log, i) => ({
-        name: `#${i + 1}`,
-        value:
-          log.level === "high"
-            ? 3
-            : log.level === "medium"
-            ? 2
-            : 1,
+      // 🔥 IMPORTANT FIX (your backend uses "level")
+      const formatted = data.map((log) => ({
+        ...log,
+        severity:
+          log.level?.toLowerCase() === "high"
+            ? "High"
+            : log.level?.toLowerCase() === "medium"
+            ? "Medium"
+            : "Low",
       }));
 
-      setChartData(formatted);
+      setLogs(formatted);
     } catch (err) {
-      console.log("Dashboard Error:", err.message);
+      console.error("Fetch error:", err);
     }
   };
 
+  // 🔥 SEND ATTACK
+  const sendAttack = async (type) => {
+    console.log("Sending:", type);
+
+    try {
+      await fetch(`${API}/logs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: type,
+          severity: "low", // backend converts to level
+          message: `${type} simulated`,
+        }),
+      });
+
+      fetchLogs(); // refresh after send
+    } catch (err) {
+      console.error("POST error:", err);
+    }
+  };
+
+  // 🔁 AUTO REFRESH
   useEffect(() => {
-    fetchAll();
-    const interval = setInterval(fetchAll, 3000);
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // 🔥 SEND ATTACK
-  const sendLog = async (message) => {
-    try {
-      await axios.post(`${API}/logs`, { message });
-      fetchAll();
-    } catch (err) {
-      console.log("Send Error:", err.message);
+  // 🔥 FILTER
+  const filteredLogs =
+    filter === "ALL"
+      ? logs
+      : logs.filter((log) => log.type === filter);
+
+  // 🔥 GROUP FOR FLOW CHART
+  const grouped = {};
+
+  filteredLogs.forEach((log) => {
+    const time = new Date(log.createdAt).toLocaleTimeString();
+
+    if (!grouped[time]) {
+      grouped[time] = {
+        time,
+        SQL: 0,
+        XSS: 0,
+        BRUTE: 0,
+      };
     }
-  };
+
+    if (log.type === "SQL Injection") grouped[time].SQL++;
+    if (log.type === "XSS Attack") grouped[time].XSS++;
+    if (log.type === "Brute Force") grouped[time].BRUTE++;
+  });
+
+  const chartData = Object.values(grouped);
+
+  // 🔥 PIE DATA
+  const pieData = [
+    {
+      name: "High",
+      value: logs.filter((l) => l.severity === "High").length,
+    },
+    {
+      name: "Medium",
+      value: logs.filter((l) => l.severity === "Medium").length,
+    },
+    {
+      name: "Low",
+      value: logs.filter((l) => l.severity === "Low").length,
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-6">
+    <div className="min-h-screen bg-black text-green-400 p-6 font-mono">
+      <h1 className="text-3xl mb-6">🚀 Sentinel AI Dashboard</h1>
 
-      <h1 className="text-3xl text-cyan-400 mb-6">
-        🚀 Sentinel AI Dashboard
-      </h1>
-
-      {/* BUTTONS */}
-      <div className="flex gap-3 mb-6">
+      {/* 🔥 BUTTONS */}
+      <div className="mb-6 flex gap-3 flex-wrap">
         <button
-          onClick={() => sendLog("SELECT * FROM users")}
-          className="bg-red-500 px-4 py-2 rounded"
+          onClick={() => {
+            sendAttack("SQL Injection");
+            setFilter("SQL Injection");
+          }}
+          className="px-4 py-2 bg-red-600 text-white"
         >
-          SQL Attack
+          SQL Injection
         </button>
 
         <button
-          onClick={() => sendLog("<script>alert(1)</script>")}
-          className="bg-yellow-500 px-4 py-2 rounded"
+          onClick={() => {
+            sendAttack("XSS Attack");
+            setFilter("XSS Attack");
+          }}
+          className="px-4 py-2 bg-yellow-600 text-white"
         >
           XSS Attack
         </button>
 
         <button
-          onClick={() => sendLog("Brute force login")}
-          className="bg-pink-500 px-4 py-2 rounded"
+          onClick={() => {
+            sendAttack("Brute Force");
+            setFilter("Brute Force");
+          }}
+          className="px-4 py-2 bg-blue-600 text-white"
         >
           Brute Force
         </button>
 
         <button
-          onClick={() => sendLog("Normal traffic")}
-          className="bg-green-500 px-4 py-2 rounded"
+          onClick={() => setFilter("ALL")}
+          className="px-4 py-2 bg-gray-700 text-white"
         >
-          Normal
+          ALL
         </button>
       </div>
 
-      {/* STATS */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <div className="bg-gray-800 p-4 text-center">
-          Total: {stats.total}
-        </div>
+      {/* 🔥 FLOW CHART */}
+      <h2 className="text-xl mb-2">📈 Attack Flow</h2>
+      <div className="bg-gray-900 p-4 mb-8 rounded">
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData}>
+            <CartesianGrid stroke="#333" />
+            <XAxis dataKey="time" />
+            <YAxis />
+            <Tooltip />
 
-        <div className="bg-red-500 p-4 text-center">
-          High: {stats.high}
-        </div>
-
-        <div className="bg-yellow-500 text-black p-4 text-center">
-          Medium: {stats.medium}
-        </div>
-
-        <div className="bg-green-500 p-4 text-center">
-          Safe: {stats.low}
-        </div>
+            <Line type="monotone" dataKey="SQL" stroke="#ff4d4d" />
+            <Line type="monotone" dataKey="XSS" stroke="#ffaa00" />
+            <Line type="monotone" dataKey="BRUTE" stroke="#00ffcc" />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* GRAPH */}
-      <div className="bg-gray-900 p-6 mb-8">
-        <h2 className="text-xl mb-4">📈 Threat Trend</h2>
-
-        <LineChart width={800} height={300} data={chartData}>
-          <CartesianGrid stroke="#444" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="value" stroke="#00ffff" />
-        </LineChart>
+      {/* 🔥 PIE */}
+      <h2 className="text-xl mb-2">📊 Severity Distribution</h2>
+      <div className="bg-gray-900 p-4 mb-8 rounded">
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie data={pieData} dataKey="value" outerRadius={90} label>
+              {pieData.map((_, i) => (
+                <Cell key={i} fill={COLORS[i]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* LOGS */}
-      <div className="bg-gray-900 p-6">
-        <h2 className="text-xl mb-4">📜 Logs</h2>
+      {/* 🔥 LOGS */}
+      <h2 className="text-xl mb-4">📜 Logs</h2>
 
-        {logs.length === 0 ? (
-          <p>No logs found</p>
-        ) : (
-          logs.map((log, i) => (
-            <div key={i} className="border-b border-gray-700 py-2">
-
-              <div className={log.anomaly ? "text-red-400" : ""}>
-                {log.message}
-              </div>
-
-              <div className="text-sm text-gray-400">
-                🌍 {log.location?.country || "Unknown"}
-              </div>
-
-              <div className="text-xs text-gray-500">
-                IP: {log.ip}
-              </div>
-
-              {log.anomaly && (
-                <div className="text-red-500 text-sm">
-                  ⚠️ Anomaly
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
+      {filteredLogs.map((log, i) => (
+        <div key={i} className="border-b border-gray-700 py-2">
+          <p>Type: {log.type}</p>
+          <p>Severity: {log.severity}</p>
+          <p>Message: {log.message}</p>
+        </div>
+      ))}
     </div>
   );
 }
