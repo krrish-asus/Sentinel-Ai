@@ -1,16 +1,6 @@
 body {
-  background: #020617;
-  color: #00ffcc;
+  margin: 0;
+  background-color: #020617;
+  color: cyan;
   font-family: monospace;
-}
-
-/* terminal glow */
-h1, h2 {
-  text-shadow: 0 0 10px #00ffcc;
-}
-
-/* logs look like terminal */
-.log-line {
-  border-bottom: 1px solid rgba(0,255,204,0.2);
-  padding: 5px;
 }
