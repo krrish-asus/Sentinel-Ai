@@ -7,33 +7,32 @@ dotenv.config();
 
 const app = express();
 
-// middleware
 app.use(cors());
 app.use(express.json());
 
-// root check
+// ✅ ROOT CHECK
 app.get("/", (req, res) => {
-  res.send("Sentinel AI Backend Running 🚀");
+  res.send("Backend Running 🚀");
 });
 
-// debug route
+// ✅ DEBUG
 app.get("/test", (req, res) => {
-  res.send("TEST ROUTE WORKING ✅");
+  res.send("TEST OK ✅");
 });
 
-// logs route
+// ✅ IMPORTANT (API PREFIX)
 app.use("/api", logRoutes);
 
-// fallback (shows exact error)
+// ❌ Catch errors
 app.use((req, res) => {
   res.status(404).json({
     error: "Route not found",
-    path: req.originalUrl,
+    path: req.originalUrl
   });
 });
 
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} - server.js:38`);
+  console.log("Server running on port " + PORT);
 });

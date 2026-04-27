@@ -2,27 +2,36 @@ import express from "express";
 
 const router = express.Router();
 
+// GET logs
 router.get("/logs", (req, res) => {
   res.json([
     {
-      id: 1,
-      type: "SQL Injection",
-      ip: "192.168.1.10",
-      status: "Blocked",
+      message: "SQL Injection attack",
+      level: "high",
+      createdAt: new Date()
     },
     {
-      id: 2,
-      type: "XSS Attack",
-      ip: "192.168.1.20",
-      status: "Blocked",
+      message: "XSS attack",
+      level: "medium",
+      createdAt: new Date()
     },
     {
-      id: 3,
-      type: "Brute Force",
-      ip: "192.168.1.30",
-      status: "Detected",
-    },
+      message: "Brute force attempt",
+      level: "low",
+      createdAt: new Date()
+    }
   ]);
+});
+
+// POST log (for your buttons)
+router.post("/logs", (req, res) => {
+  const { message, level } = req.body;
+
+  res.json({
+    message,
+    level,
+    createdAt: new Date()
+  });
 });
 
 export default router;
