@@ -7,15 +7,18 @@ const API = import.meta.env.VITE_API_URL;
 
 const Dashboard = () => {
   const [logs, setLogs] = useState([]);
-  const [filter, setFilter] = useState("ALL");
+  const [loading, setLoading] = useState(false);
 
-  // 🔄 Fetch logs
   const fetchLogs = async () => {
     try {
-      const res = await axios.get(`${API}/logs`);
-      setLogs(res.data.reverse());
+      setLoading(true);
+      const res = await axios.get(`${API}/api/logs`);
+      setLogs(res.data || []);
     } catch (err) {
-      console.error("Error fetching logs:", err);
+      console.error(err);
+      setLogs([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -23,101 +26,96 @@ const Dashboard = () => {
     fetchLogs();
   }, []);
 
-  // 🚀 Send attack (FIXED)
   const sendAttack = async (type) => {
     try {
-      await axios.post(`${API}/logs`, {
-        message: `${type} simulated`,
-        level: "low",
+      await axios.post(`${API}/api/logs`, {
+        message: `${type} detected`,
+        level: type === "SQL Injection" ? "high" : "medium",
       });
       fetchLogs();
     } catch (err) {
-      console.error("Error sending attack:", err);
+      console.error(err);
     }
   };
 
-  // 📊 Stats (FIXED)
+  // Stats
   const total = logs.length;
   const high = logs.filter((l) => l.level === "high").length;
   const medium = logs.filter((l) => l.level === "medium").length;
   const low = logs.filter((l) => l.level === "low").length;
 
-  // 🔍 Filter logs (FIXED)
-  const filteredLogs =
-    filter === "ALL"
-      ? logs
-      : logs.filter((log) =>
-          log.message.toLowerCase().includes(filter.toLowerCase())
-        );
-
   return (
-    <div className="bg-[#020617] text-cyan-300 min-h-screen p-6">
-      {/* HEADER */}
-      <h1 className="text-3xl font-bold mb-6">
-        🚀 Sentinel AI Dashboard
-      </h1>
+    <div className="min-h-screen bg-[#020617] text-cyan-300 p-6 font-mono">
 
-      {/* BUTTONS */}
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-cyan-400 tracking-wider">
+          🛡️ SENTINEL AI SOC
+        </h1>
+        <span className="text-green-400 animate-pulse">
+          ● SYSTEM ACTIVE
+        </span>
+      </div>
+
+      {/* ACTION BUTTONS */}
       <div className="flex gap-3 mb-6">
-        <button onClick={() => sendAttack("SQL Injection")} className="btn">
-          SQL Injection
+        <button onClick={() => sendAttack("SQL Injection")} className="cyber-btn">
+          SQL Attack
         </button>
-        <button onClick={() => sendAttack("XSS Attack")} className="btn">
+        <button onClick={() => sendAttack("XSS Attack")} className="cyber-btn">
           XSS Attack
         </button>
-        <button onClick={() => sendAttack("Brute Force")} className="btn">
+        <button onClick={() => sendAttack("Brute Force")} className="cyber-btn">
           Brute Force
-        </button>
-        <button onClick={() => setFilter("ALL")} className="btn">
-          ALL
         </button>
       </div>
 
-      {/* 🌍 GLOBE + STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        {/* LEFT → GLOBE */}
-        <div className="bg-[#020617] border border-cyan-500 rounded-xl p-4 flex justify-center items-center">
-          <div style={{ width: "400px", height: "400px" }}>
-            <WorldMap />
+      {/* GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* 🌍 MAP */}
+        <div className="cyber-card col-span-2">
+          <h2 className="cyber-title">🌍 GLOBAL THREAT MAP</h2>
+          <WorldMap logs={logs} />
+        </div>
+
+        {/* 📊 STATS */}
+        <div className="cyber-card">
+          <h2 className="cyber-title">📊 THREAT STATS</h2>
+          <div className="space-y-2">
+            <p>Total: <span className="text-white">{total}</span></p>
+            <p className="text-red-400">High: {high}</p>
+            <p className="text-yellow-400">Medium: {medium}</p>
+            <p className="text-green-400">Low: {low}</p>
           </div>
         </div>
 
-        {/* RIGHT → STATS */}
-        <div className="bg-[#020617] border border-cyan-500 rounded-xl p-4">
-          <h2 className="text-xl mb-4">📊 Stats</h2>
-          <p>Total: {total}</p>
-          <p>High: {high}</p>
-          <p>Medium: {medium}</p>
-          <p>Low: {low}</p>
+        {/* 📈 CHART */}
+        <div className="cyber-card col-span-2">
+          <h2 className="cyber-title">📈 ATTACK FLOW</h2>
+          <ThreatChart logs={logs} />
         </div>
-      </div>
 
-      {/* 📈 ATTACK FLOW CHART */}
-      <div className="bg-[#020617] border border-cyan-500 rounded-xl p-4 mb-10">
-        <h2 className="text-xl mb-4">📈 Attack Flow</h2>
-        <ThreatChart logs={logs} />
-      </div>
+        {/* 📜 LOGS */}
+        <div className="cyber-card">
+          <h2 className="cyber-title">📜 LIVE LOGS</h2>
 
-      {/* 📜 LOGS */}
-      <div className="bg-[#020617] border border-cyan-500 rounded-xl p-4">
-        <h2 className="text-xl mb-4">📜 Logs</h2>
-
-        {filteredLogs.length === 0 ? (
-          <p>No logs found</p>
-        ) : (
-          filteredLogs.map((log, i) => (
-            <div
-              key={i}
-              className="border-b border-gray-700 py-2 text-sm"
-            >
-              <p><span className="text-cyan-400">Type:</span> {log.message}</p>
-              <p><span className="text-cyan-400">Severity:</span> {log.level}</p>
-              <p className="text-gray-400 text-xs">
-                {new Date(log.createdAt).toLocaleString()}
-              </p>
+          {loading ? (
+            <p>Loading...</p>
+          ) : logs.length === 0 ? (
+            <p>No logs</p>
+          ) : (
+            <div className="h-64 overflow-y-auto text-sm space-y-2">
+              {logs.slice(0, 10).map((log, i) => (
+                <div key={i} className="border-b border-gray-700 pb-1">
+                  <p className="text-cyan-400">{log.message}</p>
+                  <p className="text-xs text-gray-400">{log.level}</p>
+                </div>
+              ))}
             </div>
-          ))
-        )}
+          )}
+        </div>
+
       </div>
     </div>
   );

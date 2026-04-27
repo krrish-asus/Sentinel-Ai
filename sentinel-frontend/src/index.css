@@ -1,6 +1,29 @@
-body {
-  margin: 0;
-  background-color: #020617;
+/* 🔥 Cyber Button */
+.cyber-btn {
+  background: black;
+  border: 1px solid cyan;
+  padding: 8px 14px;
   color: cyan;
-  font-family: monospace;
+  transition: 0.3s;
+}
+.cyber-btn:hover {
+  background: cyan;
+  color: black;
+  box-shadow: 0 0 10px cyan;
+}
+
+/* 🔥 Cyber Card */
+.cyber-card {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid cyan;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,255,255,0.2);
+}
+
+/* 🔥 Titles */
+.cyber-title {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: cyan;
 }

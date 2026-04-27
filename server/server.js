@@ -1,4 +1,5 @@
 import express from "express";
+console.log("🔥 CORRECT SERVER RUNNING - server.js:2");
 import cors from "cors";
 import dotenv from "dotenv";
 import logRoutes from "./src/routes/logRoutes.js";
@@ -23,5 +24,5 @@ app.use("/api", logRoutes);
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log("Server running on port - server.js:26" + PORT);
+  console.log("Server running on port - server.js:27" + PORT);
 });
