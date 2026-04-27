@@ -2,29 +2,28 @@ import express from "express";
 
 const router = express.Router();
 
+// 🔥 in-memory logs (works without DB)
+let logs = [];
+
+// GET logs
 router.get("/logs", (req, res) => {
-  res.json([
-    {
-      message: "SQL Injection",
-      level: "high",
-      createdAt: new Date()
-    },
-    {
-      message: "XSS Attack",
-      level: "medium",
-      createdAt: new Date()
-    }
-  ]);
+  res.json(logs);
 });
 
+// POST new log
 router.post("/logs", (req, res) => {
   const { message, level } = req.body;
 
-  res.json({
+  const newLog = {
+    id: Date.now(),
     message,
     level,
-    createdAt: new Date()
-  });
+    createdAt: new Date(),
+  };
+
+  logs.unshift(newLog);
+
+  res.json(newLog);
 });
 
 export default router;

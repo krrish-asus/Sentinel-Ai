@@ -1,14 +1,38 @@
-import { MapContainer, TileLayer } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import React from "react";
+import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 
-export default function WorldMap() {
+const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+const WorldMap = ({ logs }) => {
+
+  const points = logs.map((log) => ({
+    coordinates: [
+      Math.random() * 360 - 180,
+      Math.random() * 140 - 70
+    ],
+    color:
+      log.level === "high" ? "red" :
+      log.level === "medium" ? "orange" :
+      "green",
+  }));
+
   return (
-    <MapContainer
-      center={[20, 0]}
-      zoom={2}
-      style={{ height: "350px", width: "100%", borderRadius: "12px" }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-    </MapContainer>
+    <ComposableMap>
+      <Geographies geography={geoUrl}>
+        {({ geographies }) =>
+          geographies.map((geo) => (
+            <Geography key={geo.rsmKey} geography={geo} fill="#0f172a" stroke="#00ffff" />
+          ))
+        }
+      </Geographies>
+
+      {points.map((p, i) => (
+        <Marker key={i} coordinates={p.coordinates}>
+          <circle r={6} fill={p.color} />
+        </Marker>
+      ))}
+    </ComposableMap>
   );
-}
+};
+
+export default WorldMap;

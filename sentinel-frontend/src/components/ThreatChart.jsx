@@ -1,3 +1,4 @@
+import React from "react";
 import {
   LineChart,
   Line,
@@ -5,33 +6,37 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid
+  CartesianGrid,
 } from "recharts";
 
-export default function ThreatChart({ logs }) {
+const ThreatChart = ({ logs }) => {
 
-  // group logs by index (simple demo)
   const data = logs.map((log, index) => ({
-    name: `#${index + 1}`,
-    threats: log.level === "high" ? 1 : 0
+    name: index + 1,
+    severity:
+      log.level === "high" ? 100 :
+      log.level === "medium" ? 60 :
+      30,
   }));
 
   return (
-    <div style={{ width: "100%", height: "300px" }}>
-      <ResponsiveContainer>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Line
-            type="monotone"
-            dataKey="threats"
-            stroke="#ef4444"
-            strokeWidth={3}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#0ff" />
+        <XAxis dataKey="name" stroke="#0ff" />
+        <YAxis stroke="#0ff" />
+        <Tooltip />
+
+        <Line
+          type="monotone"
+          dataKey="severity"
+          stroke="#00ffff"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
-}
+};
+
+export default ThreatChart;
